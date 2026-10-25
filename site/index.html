@@ -451,7 +451,18 @@ const nowBR = () => new Date();
 const started = () => nowBR() >= new Date(CONFIG.inicioDivulgacao);
 
 function url(uf,cargo){ const ele=cargo===3?CONFIG.eleicaoEstadual:CONFIG.eleicao; const c=String(cargo).padStart(4,"0"), e=ele.padStart(6,"0"); return `${CONFIG.base}/${ele}/dados/${uf}/${uf}-c${c}-e${e}-u.json`; }
-function photo(sq){ return /^\d+$/.test(sq||"") ? `${CONFIG.base}/${CONFIG.eleicao}/fotos/br/${sq}.jpeg` : ""; }
+// Fotos oficiais do registro de candidatura no TSE (as mesmas do site do TSE).
+// Antes de sair o 1º boletim, usa o número sequencial do candidato do 1º turno.
+const SQ_INICIAL={ l:"280002542548", f:"280002551544" };
+function photoUrls(sq){ return /^\d+$/.test(sq||"") ? [`${CONFIG.base}/${CONFIG.eleicao}/fotos/br/${sq}.jpeg`, `${CONFIG.base}/6257/fotos/br/${sq}.jpeg`] : []; }
+function loadPhoto(el,sq){
+  if(!el||!sq||el.dataset.sq===sq||el.dataset.ok===sq) return; el.dataset.sq=sq;
+  const urls=photoUrls(sq); let i=0;
+  const next=()=>{ if(i>=urls.length) return; const img=new Image(); img.alt=""; img.decoding="async";
+    img.onload=()=>{ el.textContent=""; el.appendChild(img); el.dataset.ok=sq; };
+    img.onerror=()=>{ i++; next(); }; img.src=urls[i]; };
+  next();
+}
 
 function parse(json){
   const cands=[]; const cargo=json&&json.carg&&json.carg[0];
@@ -529,7 +540,7 @@ function render(){
   if(live && S.mode==="t1" && !userMode) setMode("t2");
   renderSide(); renderTable(); renderGovs(); updateMap(); renderMini(); checkWinner(); updateTitle(); if(document.pictureInPictureElement) drawPip();
 }
-function setPhoto(id,sq){ const el=$(id); const u=photo(sq); if(!u||el.dataset.sq===sq) return; el.dataset.sq=sq; const img=new Image(); img.alt=""; img.onload=()=>{el.textContent="";el.appendChild(img)}; img.src=u; }
+function setPhoto(id,sq){ const el=$(id); if(el.dataset.ok && !sq) return; loadPhoto(el,sq); }
 
 function ufData(uf){
   if(S.mode==="t1"){ const d=T1[uf]; return d?{l:d[0],f:d[1],pst:100,has:true}:null; }
@@ -683,7 +694,7 @@ function showWinner(w){
   const cor=lado==="l"?"var(--lula)":"var(--flavio)";
   const win=$("win"); win.style.setProperty("--c",cor);
   $("winName").textContent=nome; $("winPct").textContent=fmtP(w.pvap); $("winVotes").textContent=fmtN(w.vap)+" votos";
-  const ph=$("winPhoto"); ph.textContent=nome[0]; const u=photo(w.sq); if(u){ const img=new Image(); img.alt=""; img.onload=()=>{ph.textContent="";ph.appendChild(img)}; img.src=u; }
+  const ph=$("winPhoto"); ph.textContent=nome[0]; delete ph.dataset.sq; delete ph.dataset.ok; loadPhoto(ph, w.sq || SQ_INICIAL[lado]);
   const link=location.href.split("#")[0];
   $("winShare").href="https://wa.me/?text="+encodeURIComponent(`${nome} é eleito presidente com ${fmtP(w.pvap)} dos votos válidos. Veja o resultado estado por estado: ${link}`);
   win.hidden=false; document.body.style.overflow="hidden"; $("winClose").focus();
@@ -783,6 +794,7 @@ function updateTitle(){
 }
 
 /* ======== INÍCIO ======== */
+setPhoto("phL",SQ_INICIAL.l); setPhoto("phF",SQ_INICIAL.f);
 try{ initMap(); }catch(e){ console.error(e); }
 initAds(); initShare();
 if(!started()) setMode("t1");
