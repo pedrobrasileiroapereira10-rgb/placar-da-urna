@@ -171,6 +171,42 @@ footer p{margin:.3em 0;max-width:80ch}
   .map-legend{font-size:11px;padding:6px 8px}
   .status{margin-left:0}
 }
+/* mini-placar que acompanha a rolagem */
+.mini{border-top:1px solid var(--line);overflow:hidden;max-height:0;transition:max-height .35s ease}
+.mini.on{max-height:60px}
+.mini .wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding-block:8px}
+.mini .ms{all:unset;font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.mini .ms b{font-family:var(--f-num);font-size:16px}
+.mini .ms.l{color:var(--lula)} .mini .ms.f{color:var(--flavio)}
+.mini .ms.dim{opacity:.55}
+.mini .mbar{height:8px;border-radius:99px;background:var(--line);display:flex;overflow:hidden;position:relative}
+.mini .mbar i{display:block;height:100%;transition:width .8s}
+.mini .mbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.5}
+.mini .mpst{font-size:12px;color:var(--muted);white-space:nowrap}
+@media (max-width:640px){
+  .mini .wrap{grid-template-columns:auto minmax(0,1fr) auto;gap:8px}
+  .mini .mpst{display:none}
+  .mini .ms{font-size:15px} .mini .ms b{font-size:14px}
+  .mini .ms .nm{display:none}
+}
+
+/* vitória */
+.win{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--c) 30%,#05070d),#05070d 70%);animation:winIn .6s ease both}
+.win canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.win-card{position:relative;text-align:center;max-width:560px;width:100%;display:grid;justify-items:center;gap:6px}
+.win-photo{width:132px;height:132px;border-radius:50%;border:4px solid var(--c);overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 25%,var(--panel));font-family:var(--f-display);font-weight:900;font-size:56px;color:var(--c);box-shadow:0 0 0 10px color-mix(in srgb,var(--c) 18%,transparent),0 0 80px -10px var(--c);animation:pop .8s .3s cubic-bezier(.2,1.6,.4,1) both}
+.win-photo img{width:100%;height:100%;object-fit:cover}
+.win-name{font-family:var(--f-display);font-weight:900;font-size:clamp(44px,11vw,96px);line-height:.92;text-transform:uppercase;margin-top:14px;animation:rise .7s .55s ease both}
+.win-title{font-family:var(--f-display);font-weight:800;font-size:clamp(20px,4.5vw,30px);text-transform:uppercase;color:var(--gold);letter-spacing:.04em;animation:rise .7s .75s ease both}
+.win-pct{font-family:var(--f-display);font-weight:900;font-size:clamp(56px,14vw,120px);line-height:1;color:var(--c);margin-top:6px;animation:rise .7s .95s ease both}
+.win-votes{color:var(--muted);font-size:14px;animation:rise .7s 1.05s ease both}
+.win-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px;animation:rise .7s 1.2s ease both}
+.win .eyebrow{animation:rise .6s .2s ease both}
+@keyframes winIn{from{opacity:0}}
+@keyframes pop{from{transform:scale(.2);opacity:0}}
+@keyframes rise{from{transform:translateY(24px);opacity:0}}
+.replay{all:unset;cursor:pointer;color:var(--gold);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -180,6 +216,30 @@ footer p{margin:.3em 0;max-width:80ch}
     <div class="status">
       <span class="pill" id="pill"><span class="dot"></span><span id="pillTxt">Aguardando</span></span>
       <span id="clock" class="num"></span>
+    </div>
+  </div>
+  <div class="mini" id="mini" aria-live="off">
+    <div class="wrap">
+      <span class="ms l" id="mL"><span class="nm">Lula</span><b class="num" id="mLp">–</b></span>
+      <div class="mbar" aria-hidden="true"><i id="mbL" style="background:var(--lula);width:50%"></i><i id="mbF" style="background:var(--flavio);width:50%;margin-left:auto"></i></div>
+      <span class="ms f" id="mF"><b class="num" id="mFp">–</b><span class="nm">Flávio</span></span>
+      <span class="mpst num" id="mPst"></span>
+    </div>
+  </div>
+</div>
+
+<div class="win" id="win" hidden role="dialog" aria-modal="true" aria-labelledby="winName">
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="win-card">
+    <div class="eyebrow">Resultado oficial · TSE</div>
+    <div class="win-photo" id="winPhoto"></div>
+    <div class="win-name" id="winName"></div>
+    <div class="win-title">Eleito Presidente da República</div>
+    <div class="win-pct num" id="winPct"></div>
+    <div class="win-votes num" id="winVotes"></div>
+    <div class="win-actions">
+      <a class="btn primary" id="winShare" href="#" target="_blank" rel="noopener">Compartilhar no WhatsApp</a>
+      <button class="btn" id="winClose">Ver resultado completo</button>
     </div>
   </div>
 </div>
@@ -443,7 +503,7 @@ function render(){
   if(br){ setPhoto("phL",br.lsq); setPhoto("phF",br.fsq); }
   if(S.br){ $("xB").textContent=fmtP(S.br.pvb); $("xN").textContent=fmtP(S.br.ptvn); $("xA").textContent=fmtP(S.br.pa); $("xS").textContent=fmtP(S.br.pst); }
   if(live && S.mode==="t1" && !userMode) setMode("t2");
-  renderSide(); renderTable(); renderGovs(); updateMap();
+  renderSide(); renderTable(); renderGovs(); updateMap(); renderMini(); checkWinner();
 }
 function setPhoto(id,sq){ const el=$(id); const u=photo(sq); if(!u||el.dataset.sq===sq) return; el.dataset.sq=sq; const img=new Image(); img.alt=""; img.onload=()=>{el.textContent="";el.appendChild(img)}; img.src=u; }
 
@@ -474,7 +534,7 @@ function renderGovs(){
   $("govs").innerHTML=Object.entries(GOVS).map(([uf,base])=>{
     const p=S.gov[uf]; const has=p&&p.cands.some(c=>c.vap>0);
     let list;
-    if(p&&p.cands.length){ list=p.cands.slice(0,2).map(c=>({nome:titleCase(c.nome),sg:c.sg,n:c.n,p:c.pvap,v:c.vap,el:/eleito/i.test(c.st)||c.e==="s"})); }
+    if(p&&p.cands.length){ list=p.cands.slice(0,2).map(c=>({nome:titleCase(c.nome),sg:c.sg,n:c.n,p:c.pvap,v:c.vap,el:/^eleito/i.test(c.st)||c.e==="s"})); }
     else list=base.map(([nome,sg])=>({nome,sg,n:"",p:null,v:null,el:false}));
     const lead=has?Math.max(...list.map(x=>x.p||0)):-1;
     return `<article class="gov"><header><h3>${NOMES[uf]}</h3><span class="meta num">${p?fmtP(p.pst)+" apurado":"aguardando"}</span></header>${
@@ -564,6 +624,68 @@ function initShare(){
   $("wa").href="https://wa.me/?text="+encodeURIComponent(msg);
   $("copyLink").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); $("copied").hidden=false; setTimeout(()=>$("copied").hidden=true,2000);}catch(e){ $("copied").textContent=link; $("copied").hidden=false; } };
   if(MONETIZACAO.pix){ $("pixBox").hidden=false; $("pixKey").textContent=MONETIZACAO.pix; $("pixCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(MONETIZACAO.pix); $("pixCopy").textContent="Chave copiada"; }catch(e){ const r=document.createRange(); r.selectNodeContents($("pixKey")); getSelection().removeAllRanges(); getSelection().addRange(r);} }; }
+}
+
+/* ======== MINI-PLACAR (acompanha a rolagem) ======== */
+let boardVisible=true;
+function renderMini(){
+  const br=pair(S.br), live=br&&br.hasVotes, mini=$("mini");
+  mini.classList.toggle("on", !!live && !boardVisible);
+  if(!live) return;
+  $("mLp").textContent=fmtP(br.l); $("mFp").textContent=fmtP(br.f);
+  $("mbL").style.width=br.l+"%"; $("mbF").style.width=br.f+"%";
+  $("mL").classList.toggle("dim", br.f>br.l); $("mF").classList.toggle("dim", br.l>br.f);
+  $("mPst").textContent=fmtP(S.br.pst)+" apurado";
+}
+new IntersectionObserver(es=>{ boardVisible=es[0].isIntersecting; renderMini(); },{rootMargin:"-60px 0px 0px 0px"}).observe(document.querySelector(".duel"));
+
+/* ======== VITÓRIA (só quando o TSE marca "Eleito") ======== */
+let winnerShown=false;
+function winnerOf(p){ return p ? p.cands.find(c=>c.e==="s"||/^eleito/i.test(c.st)) : null; }
+function checkWinner(){
+  const w=winnerOf(S.br); if(!w) return;
+  const lado=side(w.nome,w.sg); const cardId=lado==="l"?"cL":"cF";
+  document.querySelectorAll(".cand .badge").forEach(b=>b.textContent="Lidera");
+  const badge=$(cardId).querySelector(".badge"); badge.textContent="Eleito";
+  $("cL").classList.toggle("lead",lado==="l"); $("cF").classList.toggle("lead",lado==="f");
+  const notice=$("notice");
+  if(!notice.querySelector(".replay")){ notice.innerHTML=`<b>${lado==="l"?"Lula":"Flávio Bolsonaro"} foi eleito presidente</b>, segundo o TSE. <button class="replay" id="replay">Ver a animação de novo</button>`; notice.hidden=false; $("replay").onclick=()=>showWinner(w); }
+  if(winnerShown) return; winnerShown=true;
+  let seen=false; try{ seen=localStorage.getItem("placar-vitoria-2026")===w.n; }catch(e){}
+  if(!seen) showWinner(w);
+}
+function showWinner(w){
+  const lado=side(w.nome,w.sg); const nome=lado==="l"?"Lula":lado==="f"?"Flávio Bolsonaro":titleCase(w.nome);
+  const cor=lado==="l"?"var(--lula)":"var(--flavio)";
+  const win=$("win"); win.style.setProperty("--c",cor);
+  $("winName").textContent=nome; $("winPct").textContent=fmtP(w.pvap); $("winVotes").textContent=fmtN(w.vap)+" votos";
+  const ph=$("winPhoto"); ph.textContent=nome[0]; const u=photo(w.sq); if(u){ const img=new Image(); img.alt=""; img.onload=()=>{ph.textContent="";ph.appendChild(img)}; img.src=u; }
+  const link=location.href.split("#")[0];
+  $("winShare").href="https://wa.me/?text="+encodeURIComponent(`${nome} é eleito presidente com ${fmtP(w.pvap)} dos votos válidos. Veja o resultado estado por estado: ${link}`);
+  win.hidden=false; document.body.style.overflow="hidden"; $("winClose").focus();
+  try{ localStorage.setItem("placar-vitoria-2026",w.n); }catch(e){}
+  if(!matchMedia("(prefers-reduced-motion: reduce)").matches) confetti(lado==="l"?"#E8414B":"#3B82F6");
+}
+function closeWinner(){ $("win").hidden=true; document.body.style.overflow=""; stopConfetti=true; }
+$("winClose").onclick=closeWinner;
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("win").hidden) closeWinner(); });
+let stopConfetti=false;
+function confetti(color){
+  stopConfetti=false;
+  const cv=$("confetti"), ctx=cv.getContext("2d"), dpr=Math.min(2,devicePixelRatio);
+  const W=cv.clientWidth, H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; ctx.scale(dpr,dpr);
+  const cores=[color,color,"#F2C14E","#ffffff"]; const parts=[];
+  const burst=(x,n)=>{ for(let i=0;i<n;i++){ const a=-Math.PI/2+(Math.random()-.5)*1.3, v=7+Math.random()*9;
+    parts.push({x,y:H+10,vx:Math.cos(a)*v,vy:Math.sin(a)*v*1.5,r:Math.random()*6.28,vr:(Math.random()-.5)*.3,w:6+Math.random()*7,h:3+Math.random()*5,c:cores[i%cores.length],life:0}); } };
+  burst(W*.2,90); burst(W*.8,90); setTimeout(()=>burst(W*.5,120),500); setTimeout(()=>{burst(W*.1,70);burst(W*.9,70)},1200);
+  const t0=performance.now();
+  (function frame(now){
+    if(stopConfetti) { ctx.clearRect(0,0,W,H); return; }
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){ p.vy+=0.28; p.vx*=0.99; p.vy*=0.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life++;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.globalAlpha=Math.max(0,1-p.life/260); ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2))); ctx.restore(); }
+    if(now-t0<7000) requestAnimationFrame(frame); else ctx.clearRect(0,0,W,H);
+  })(t0);
 }
 
 /* ======== INÍCIO ======== */
