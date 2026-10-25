@@ -183,8 +183,16 @@ footer p{margin:.3em 0;max-width:80ch}
 .mini .mbar i{display:block;height:100%;transition:width .8s}
 .mini .mbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.5}
 .mini .mpst{font-size:12px;color:var(--muted);white-space:nowrap}
+.mini .wrap{grid-template-columns:auto minmax(0,1fr) auto auto auto}
+.pip-btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid var(--gold);color:var(--gold);white-space:nowrap}
+.pip-btn svg{width:14px;height:14px}
+.pip-btn[hidden]{display:none}
+.pip-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+.pip-row .pip-btn{font-size:14px;padding:9px 16px;background:color-mix(in srgb,var(--gold) 12%,transparent)}
+#pipVideo{position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 @media (max-width:640px){
-  .mini .wrap{grid-template-columns:auto minmax(0,1fr) auto;gap:8px}
+  .mini .wrap{grid-template-columns:auto minmax(0,1fr) auto auto;gap:8px}
+  .mini .pip-btn .t{display:none}
   .mini .mpst{display:none}
   .mini .ms{font-size:15px} .mini .ms b{font-size:14px}
   .mini .ms .nm{display:none}
@@ -224,6 +232,7 @@ footer p{margin:.3em 0;max-width:80ch}
       <div class="mbar" aria-hidden="true"><i id="mbL" style="background:var(--lula);width:50%"></i><i id="mbF" style="background:var(--flavio);width:50%;margin-left:auto"></i></div>
       <span class="ms f" id="mF"><b class="num" id="mFp">–</b><span class="nm">Flávio</span></span>
       <span class="mpst num" id="mPst"></span>
+      <button class="pip-btn" data-pip hidden aria-label="Abrir placar flutuante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1" fill="currentColor"/></svg><span class="t">Flutuante</span></button>
     </div>
   </div>
 </div>
@@ -282,6 +291,8 @@ footer p{margin:.3em 0;max-width:80ch}
     </div>
     <div class="bar" aria-hidden="true"><div class="l" id="bL" style="width:0"></div><div class="f" id="bF" style="width:0"></div><div class="mid"></div></div>
     <div class="bar-legend"><span>Lula</span><span>50% dos votos válidos</span><span>Flávio</span></div>
+    <div class="pip-row" id="pipRow" hidden><button class="pip-btn" data-pip><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="8" height="7" rx="1" fill="currentColor"/></svg>Abrir placar flutuante</button><span>Fica por cima dos outros apps, como placar de futebol, e atualiza sozinho.</span></div>
+    <video id="pipVideo" muted playsinline aria-hidden="true"></video>
     <div class="notice" id="notice"></div>
   </div>
 
@@ -503,7 +514,7 @@ function render(){
   if(br){ setPhoto("phL",br.lsq); setPhoto("phF",br.fsq); }
   if(S.br){ $("xB").textContent=fmtP(S.br.pvb); $("xN").textContent=fmtP(S.br.ptvn); $("xA").textContent=fmtP(S.br.pa); $("xS").textContent=fmtP(S.br.pst); }
   if(live && S.mode==="t1" && !userMode) setMode("t2");
-  renderSide(); renderTable(); renderGovs(); updateMap(); renderMini(); checkWinner();
+  renderSide(); renderTable(); renderGovs(); updateMap(); renderMini(); checkWinner(); updateTitle(); if(document.pictureInPictureElement) drawPip();
 }
 function setPhoto(id,sq){ const el=$(id); const u=photo(sq); if(!u||el.dataset.sq===sq) return; el.dataset.sq=sq; const img=new Image(); img.alt=""; img.onload=()=>{el.textContent="";el.appendChild(img)}; img.src=u; }
 
@@ -686,6 +697,76 @@ function confetti(color){
       ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.globalAlpha=Math.max(0,1-p.life/260); ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2))); ctx.restore(); }
     if(now-t0<7000) requestAnimationFrame(frame); else ctx.clearRect(0,0,W,H);
   })(t0);
+}
+
+/* ======== PLACAR FLUTUANTE (picture-in-picture) ======== */
+const PIP={w:640,h:360};
+if(!CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); };
+const pipCanvas=document.createElement("canvas"); pipCanvas.width=PIP.w; pipCanvas.height=PIP.h;
+const pipVideo=$("pipVideo"); let pipStream=null, pipTimer=null;
+const pipOk = !!(document.pictureInPictureEnabled && pipCanvas.captureStream && pipVideo.requestPictureInPicture);
+function drawPip(){
+  const c=pipCanvas.getContext("2d"), W=PIP.w, H=PIP.h;
+  const D="'Big Shoulders Display','Arial Narrow',Impact,sans-serif", B="'IBM Plex Sans',system-ui,sans-serif";
+  c.fillStyle="#080B14"; c.fillRect(0,0,W,H);
+  const br=pair(S.br), live=br&&br.hasVotes, w=winnerOf(S.br);
+  // cabeçalho
+  c.textBaseline="alphabetic"; c.textAlign="left";
+  const blink = w ? true : Math.floor(Date.now()/700)%2===0;
+  c.fillStyle = w ? "#3DDC97" : (started()? (blink?"#F2C14E":"#5a4a1e") : "#8C97B2");
+  c.beginPath(); c.arc(30,38,8,0,7); c.fill();
+  c.fillStyle="#E9EDF7"; c.font="700 22px "+B;
+  c.fillText(w?"RESULTADO FINAL":started()?"AO VIVO":"2º TURNO 2026",48,46);
+  c.textAlign="right"; c.fillStyle="#8C97B2"; c.font="600 20px "+B;
+  c.fillText(S.br? fmtP(S.br.pst)+" apurado" : "Presidente", W-24,46);
+  if(!live){
+    c.textAlign="center"; c.fillStyle="#E9EDF7"; c.font="900 54px "+D;
+    c.fillText("LULA  ×  FLÁVIO",W/2,170);
+    c.fillStyle="#8C97B2"; c.font="500 24px "+B;
+    c.fillText(started()?"Aguardando os primeiros dados do TSE":"Resultados a partir das 17h (Brasília)",W/2,222);
+  } else {
+    const lead=br.l>br.f?"l":br.f>br.l?"f":"";
+    // nomes
+    let ns=34; do{ c.font="800 "+ns+"px "+D; ns-=2; }while(ns>18 && c.measureText("ELEITO ✓ FLÁVIO").width>W/2-36);
+    c.textAlign="left";
+    c.globalAlpha=lead==="f"?.55:1; c.fillStyle="#E8414B"; c.fillText(w&&side(w.nome,w.sg)==="l"?"LULA ✓ ELEITO":"LULA",24,112);
+    c.textAlign="right"; c.globalAlpha=lead==="l"?.55:1; c.fillStyle="#3B82F6"; c.fillText(w&&side(w.nome,w.sg)==="f"?"ELEITO ✓ FLÁVIO":"FLÁVIO",W-24,112);
+    // percentuais
+    let fs=104; const half=W/2-36; do{ c.font="900 "+fs+"px "+D; fs-=4; }while(fs>40 && Math.max(c.measureText(fmtP(br.l)).width,c.measureText(fmtP(br.f)).width)>half);
+    c.textAlign="left"; c.globalAlpha=lead==="f"?.55:1; c.fillStyle="#E8414B"; c.fillText(fmtP(br.l),20,212);
+    c.textAlign="right"; c.globalAlpha=lead==="l"?.55:1; c.fillStyle="#3B82F6"; c.fillText(fmtP(br.f),W-20,212);
+    c.globalAlpha=1;
+    // barra
+    const bx=24,by=246,bw=W-48,bh=22; c.fillStyle="#1E2840"; c.beginPath(); c.roundRect(bx,by,bw,bh,11); c.fill();
+    c.save(); c.beginPath(); c.roundRect(bx,by,bw,bh,11); c.clip();
+    c.fillStyle="#E8414B"; c.fillRect(bx,by,bw*br.l/100,bh); c.fillStyle="#3B82F6"; c.fillRect(bx+bw-bw*br.f/100,by,bw*br.f/100,bh); c.restore();
+    c.fillStyle="#E9EDF7"; c.fillRect(W/2-1,by-6,2,bh+12);
+    // votos
+    c.font="500 20px "+B; c.fillStyle="#8C97B2"; c.textAlign="left"; c.fillText(fmtN(br.lv)+" votos",24,300); c.textAlign="right"; c.fillText(fmtN(br.fv)+" votos",W-24,300);
+  }
+  // rodapé
+  c.textAlign="center"; c.fillStyle="#56607a"; c.font="500 17px "+B;
+  c.fillText("Placar da Urna · dados oficiais do TSE"+(S.br&&S.br.hg?" · "+S.br.hg.slice(0,5):""),W/2,H-18);
+}
+async function openPip(){
+  try{
+    if(document.pictureInPictureElement){ await document.exitPictureInPicture(); return; }
+    drawPip();
+    if(!pipStream){ pipStream=pipCanvas.captureStream(4); pipVideo.srcObject=pipStream; }
+    await pipVideo.play();
+    await pipVideo.requestPictureInPicture();
+  }catch(e){ console.error(e); alert("Seu navegador não permitiu abrir o placar flutuante. No celular, use o Chrome (Android) ou o Safari (iPhone)."); }
+}
+pipVideo.addEventListener("enterpictureinpicture",()=>{ clearInterval(pipTimer); pipTimer=setInterval(drawPip,500); document.querySelectorAll("[data-pip]").forEach(b=>b.lastChild.textContent=b.closest(".mini")?"Fechar":"Fechar placar flutuante"); });
+pipVideo.addEventListener("leavepictureinpicture",()=>{ clearInterval(pipTimer); document.querySelectorAll("[data-pip]").forEach(b=>b.lastChild.textContent=b.closest(".mini")?"Flutuante":"Abrir placar flutuante"); });
+if(pipOk){ $("pipRow").hidden=false; document.querySelectorAll("[data-pip]").forEach(b=>{ b.hidden=false; b.onclick=openPip; }); }
+
+/* ======== PLACAR NO TÍTULO DA ABA ======== */
+const baseTitle=document.title||"Placar da Urna";
+function updateTitle(){
+  const br=pair(S.br), w=winnerOf(S.br);
+  if(w){ document.title=`✅ ${side(w.nome,w.sg)==="l"?"Lula":"Flávio"} eleito ${fmtP(w.pvap)} · Placar da Urna`; return; }
+  document.title = br&&br.hasVotes ? `🔴 Lula ${fmtP(br.l)} × ${fmtP(br.f)} Flávio · Placar da Urna` : baseTitle;
 }
 
 /* ======== INÍCIO ======== */
