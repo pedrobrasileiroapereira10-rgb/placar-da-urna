@@ -1,4 +1,4 @@
-# Placar da Urna — 2º turno 2026
+# Apuração da Urna — 2º turno 2026
 
 Apuração ao vivo do 2º turno (25/10/2026): presidente (Brasil, 27 UFs e exterior) e governador (AC, AM, DF, ES, RJ, RN, TO), com mapa 3D.
 

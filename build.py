@@ -14,7 +14,7 @@ head = ('''<!doctype html>
 <meta name="description" content="Apuração do 2º turno das Eleições 2026 ao vivo: resultado de Lula x Flávio Bolsonaro estado por estado em mapa 3D e governadores, atualizado a cada minuto com dados oficiais do TSE.">
 <link rel="canonical" href=""+URL+"">
 <meta name="google-site-verification" content="toFmscq-Dqj7d5X6dkckN0-CMN-JugZzit3gs86AKCI" />
-<meta property="og:site_name" content="P10 · Placar da Urna">
+<meta property="og:site_name" content="P10 · Apuração da Urna">
 <meta property="og:title" content="Apuração 2º turno 2026 AO VIVO · Lula x Flávio">
 <meta property="og:description" content="Resultado estado por estado em mapa 3D, atualizado a cada minuto com dados oficiais do TSE.">
 <meta property="og:type" content="website">

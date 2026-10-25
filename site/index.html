@@ -7,7 +7,7 @@
 <meta name="description" content="Apuração do 2º turno das Eleições 2026 ao vivo: resultado de Lula x Flávio Bolsonaro estado por estado em mapa 3D e governadores, atualizado a cada minuto com dados oficiais do TSE.">
 <link rel="canonical" href="https://pedrobrasileiroapereira10-rgb.github.io/placar-da-urna/">
 <meta name="google-site-verification" content="toFmscq-Dqj7d5X6dkckN0-CMN-JugZzit3gs86AKCI" />
-<meta property="og:site_name" content="P10 · Placar da Urna">
+<meta property="og:site_name" content="P10 · Apuração da Urna">
 <meta property="og:title" content="Apuração 2º turno 2026 AO VIVO · Lula x Flávio">
 <meta property="og:description" content="Resultado estado por estado em mapa 3D, atualizado a cada minuto com dados oficiais do TSE.">
 <meta property="og:type" content="website">
@@ -259,7 +259,7 @@ footer p{margin:.3em 0;max-width:80ch}
 
 <div class="ticker">
   <div class="wrap">
-    <a class="brand" href="./" aria-label="P10 Placar da Urna, início"><span class="logo" aria-hidden="true">P10</span><span class="wordmark"><b>Placar da Urna</b><small>P10 · Apuração ao vivo</small></span></a>
+    <a class="brand" href="./" aria-label="P10 Apuração da Urna, início"><span class="logo" aria-hidden="true">P10</span><span class="wordmark"><b>Apuração da Urna</b><small>P10 · Ao vivo do TSE</small></span></a>
     <div class="status">
       <span class="pill" id="pill"><span class="dot"></span><span id="pillTxt">Aguardando</span></span>
       <span id="clock" class="num"></span>
@@ -809,7 +809,7 @@ function drawPip(){
   }
   // rodapé
   c.textAlign="center"; c.fillStyle="#56607a"; c.font="500 17px "+B;
-  c.fillText("P10 · Placar da Urna · dados oficiais do TSE"+(S.br&&S.br.hg?" · "+S.br.hg.slice(0,5):""),W/2,H-18);
+  c.fillText("P10 · Apuração da Urna · dados oficiais do TSE"+(S.br&&S.br.hg?" · "+S.br.hg.slice(0,5):""),W/2,H-18);
 }
 async function openPip(){
   try{
@@ -825,11 +825,11 @@ pipVideo.addEventListener("leavepictureinpicture",()=>{ clearInterval(pipTimer);
 if(pipOk){ $("pipRow").hidden=false; document.querySelectorAll("[data-pip]").forEach(b=>{ b.hidden=false; b.onclick=openPip; }); }
 
 /* ======== PLACAR NO TÍTULO DA ABA ======== */
-const baseTitle=document.title||"Placar da Urna";
+const baseTitle=document.title||"Apuração da Urna";
 function updateTitle(){
   const br=pair(S.br), w=winnerOf(S.br);
-  if(w){ document.title=`✅ ${side(w.nome,w.sg)==="l"?"Lula":"Flávio"} eleito ${fmtP(w.pvap)} · Placar da Urna`; return; }
-  document.title = br&&br.hasVotes ? `🔴 Lula ${fmtP(br.l)} × ${fmtP(br.f)} Flávio · Placar da Urna` : baseTitle;
+  if(w){ document.title=`✅ ${side(w.nome,w.sg)==="l"?"Lula":"Flávio"} eleito ${fmtP(w.pvap)} · Apuração da Urna`; return; }
+  document.title = br&&br.hasVotes ? `🔴 Lula ${fmtP(br.l)} × ${fmtP(br.f)} Flávio · Apuração da Urna` : baseTitle;
 }
 
 /* ======== INÍCIO ======== */
